@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Color Clustering API Preview</title>
+        <style>
+            .category {
+                display: inline-block;
+                width: 200px;
+                text-align: center;
+                margin: 5px;
+            }
+
+            .color-box {
+                display: inline-block;
+                width: 60px;
+                height: 60px;
+                box-sizing: border-box;
+                margin: 5px;
+                text-align: center;
+                line-height: 60px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h2>Input:</h2>
+        <textarea id="input" rows="10" cols="50"></textarea>
+        <button onclick="preview()">Preview Output</button>
+
+        <h2>Output:</h2>
+        <div id="output"></div>
+
+        <script>
+            async function preview() {
+                const inputElem = document.getElementById("input");
+                const outputElem = document.getElementById("output");
+                const inputData = JSON.parse(inputElem.value);
+
+                try {
+                    const response = await fetch('http://localhost:8080/cluster', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(inputData)
+                    });
+
+                    const data = await response.json();
+
+                    outputElem.innerHTML = '';
+
+                    for (const category in data) {
+                        const categoryElem = document.createElement('div');
+                        categoryElem.classList.add('category');
+                        const catColorBox = createColorBox(inputData.categories[category]);
+                        categoryElem.innerHTML = `<h3>${category} ${catColorBox.outerHTML}</h3>`;
+                        const colorsList = document.createElement('div');
+                        data[category].forEach(color => {
+                            colorsList.appendChild(createColorBox(color));
+                        });
+                        categoryElem.appendChild(colorsList);
+                        outputElem.appendChild(categoryElem);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+
+            function createColorBox(color) {
+                const box = document.createElement('div');
+                box.classList.add('color-box');
+                box.style.backgroundColor = color;
+                box.style.color = isDarkColor(color) ? 'white' : 'black';
+                box.innerText = color;
+                return box;
+            }
+
+            function isDarkColor(color) {
+                const c = color.substring(1);
+                const rgb = parseInt(c, 16);
+                const r = (rgb >> 16) & 0xff;
+                const g = (rgb >> 8) & 0xff;
+                const b = (rgb >> 0) & 0xff;
+                const luma = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+                return luma < 128;
+            }
+        </script>
+    </body>
+
+</html>
